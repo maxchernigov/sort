@@ -3,6 +3,8 @@ import sys
 import string
 import os
 import shutil
+import zipfile
+import tarfile
 CATEGORIES = {'images': ['.jpeg', '.png', '.jpg', '.svg'],
               'video': ['.avi', '.mp4', '.mov', '.mkv'],
               'documents': ['.doc', '.docx','.txt', '.pdf', '.xlsx', '.pptx'],
@@ -55,10 +57,15 @@ def sort_folder(path:Path):
             move_file(element, category, path)
 def archives_unpack(sort_folder:Path):
     try:
-        for elem in sort_folder.glob('*archives*'):
-            new_folder = elem.parent.joinpath(elem.stem)
-            shutil.unpack_archive(elem, new_folder)
-    except shutil.ReadError:
+        for root, _, files in os.walk(sort_folder):
+            for file in files:
+                if file.endswith('.zip'):
+                    with zipfile.ZipFile(os.path.join(root, file), 'r') as zip_ref:
+                        zip_ref.extractall(os.path.join(root, file[:-4]))
+                elif file.endswith(('.tar', '.gz')):
+                    with tarfile.open(os.path.join(root, file), 'r') as tar_ref:
+                        tar_ref.extractall(os.path.join(root, file[:-7]))
+    except (shutil.ReadError, zipfile.BadZipFile, tarfile.ReadError):
         return None
 def main():
     try:
